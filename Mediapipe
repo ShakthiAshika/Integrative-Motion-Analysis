@@ -1,0 +1,205 @@
+# Code to find out XYZ co-ordinates of the subject during each activity
+"""************************************* XYZ of Landmarks from Mediapipe model ***********************************************"""
+
+import cv2
+import mediapipe as mp
+import pandas as pd
+import glob
+import re
+import numpy as np
+import matplotlib.pyplot as plt
+
+#path="C:/Ashi/Project/cam1"
+# Initialize mediapipe pose class
+mp_pose = mp.solutions.pose
+
+# Setup the Pose function for images - independently for the images standalone processing.
+pose_image = mp_pose.Pose(static_image_mode=False,min_detection_confidence=0.5)
+
+# =============================================================================
+# # Setup the Pose function for videos - for video processing.
+# pose_video = mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.7,
+#                           min_tracking_confidence=0.7)
+# =============================================================================
+
+# Initialize mediapipe drawing class - to draw the landmarks points.
+mp_drawing = mp.solutions.drawing_utils
+
+def detectPose(image_pose, pose, draw=False, display=False):
+    
+    original_image = image_pose.copy()
+    
+    image_in_RGB = cv2.cvtColor(image_pose, cv2.COLOR_BGR2RGB)
+    
+    resultant = pose.process(image_in_RGB)
+
+    if resultant.pose_landmarks and draw:    
+
+        mp_drawing.draw_landmarks(image=original_image, landmark_list=resultant.pose_landmarks,
+                                  connections=mp_pose.POSE_CONNECTIONS,
+                                  landmark_drawing_spec=mp_drawing.DrawingSpec(color=(255,255,255),
+                                                                               thickness=3, circle_radius=3),
+                                  connection_drawing_spec=mp_drawing.DrawingSpec(color=(49,125,237),
+                                                                              thickness=2, circle_radius=2))
+    #code to show the plots with keypoints detected
+    """
+    if display:
+        
+        plt.figure(figsize=[44,44])
+        plt.subplot(121);plt.imshow(image_pose[:,:,::-1]);plt.title("Input Image");plt.axis('off');
+        plt.subplot(122);plt.imshow(original_image[:,:,::-1]);plt.title("Pose detected Image");plt.axis('off');
+
+    else:
+        return original_image
+    """
+    # Extract landmarks
+    try:
+        landmarks = resultant.pose_world_landmarks.landmark
+        #print(landmarks)
+        return landmarks
+        
+    except:
+        pass
+
+landmarks_df=pd.DataFrame()
+# Here we will read our image from the specified path to detect the pose
+
+image_path = glob.glob(path+"/*.jpg")
+
+
+for file in image_path:
+    print(file)
+    temp = re.findall(r'\d+', file)
+    frame_num = list(map(int, temp))
+    frame_num=[frame_num[2]]                     #change the list num according to the number of numeric char in your address of file
+    print("********************************************")
+    output = cv2.imread(file)
+    landmarks=detectPose(output, pose_image, draw=True, display=True)
+    try:
+        LEFT_SHOULDER_X,LEFT_SHOULDER_Y,LEFT_SHOULDER_Z = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x],[landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y],[landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].z]
+        RIGHT_SHOULDER_X,RIGHT_SHOULDER_Y,RIGHT_SHOULDER_Z = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x],[landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y],[landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].z]
+
+        LEFT_ELBOW_X,LEFT_ELBOW_Y,LEFT_ELBOW_Z = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x],[landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y],[landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].z]
+
+        RIGHT_ELBOW_X,RIGHT_ELBOW_Y,RIGHT_ELBOW_Z = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x],[landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y],[landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].z]
+
+        LEFT_WRIST_X,LEFT_WRIST_Y,LEFT_WRIST_Z = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x],[landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y],[landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].z]
+
+        RIGHT_WRIST_X,RIGHT_WRIST_Y,RIGHT_WRIST_Z = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x],[landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y],[landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].z]
+
+        LEFT_PINKY_X,LEFT_PINKY_Y,LEFT_PINKY_Z = [landmarks[mp_pose.PoseLandmark.LEFT_PINKY.value].x],[landmarks[mp_pose.PoseLandmark.LEFT_PINKY.value].y],[landmarks[mp_pose.PoseLandmark.LEFT_PINKY.value].z]
+
+        RIGHT_PINKY_X,RIGHT_PINKY_Y,RIGHT_PINKY_Z = [landmarks[mp_pose.PoseLandmark.RIGHT_PINKY.value].x],[landmarks[mp_pose.PoseLandmark.RIGHT_PINKY.value].y],[landmarks[mp_pose.PoseLandmark.RIGHT_PINKY.value].z]
+
+        LEFT_INDEX_X,LEFT_INDEX_Y,LEFT_INDEX_Z = [landmarks[mp_pose.PoseLandmark.LEFT_INDEX.value].x],[landmarks[mp_pose.PoseLandmark.LEFT_INDEX.value].y],[landmarks[mp_pose.PoseLandmark.LEFT_INDEX.value].z]
+
+        RIGHT_INDEX_X,RIGHT_INDEX_Y,RIGHT_INDEX_Z = [landmarks[mp_pose.PoseLandmark.RIGHT_INDEX.value].x],[landmarks[mp_pose.PoseLandmark.RIGHT_INDEX.value].y],[landmarks[mp_pose.PoseLandmark.RIGHT_INDEX.value].z]
+
+        LEFT_THUMB_X,LEFT_THUMB_Y,LEFT_THUMB_Z = [landmarks[mp_pose.PoseLandmark.LEFT_THUMB.value].x],[landmarks[mp_pose.PoseLandmark.LEFT_THUMB.value].y],[landmarks[mp_pose.PoseLandmark.LEFT_THUMB.value].z]
+
+        RIGHT_THUMB_X,RIGHT_THUMB_Y,RIGHT_THUMB_Z = [landmarks[mp_pose.PoseLandmark.RIGHT_THUMB.value].x],[landmarks[mp_pose.PoseLandmark.RIGHT_THUMB.value].y],[landmarks[mp_pose.PoseLandmark.RIGHT_THUMB.value].z]
+
+        LEFT_HIP_X,LEFT_HIP_Y,LEFT_HIP_Z = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x],[landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y],[landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].z]
+
+        RIGHT_HIP_X,RIGHT_HIP_Y,RIGHT_HIP_Z = [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x],[landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y],[landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].z]
+
+        LEFT_KNEE_X,LEFT_KNEE_Y,LEFT_KNEE_Z = [landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x],[landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y],[landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].z]
+
+        RIGHT_KNEE_X,RIGHT_KNEE_Y,RIGHT_KNEE_Z = [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x],[landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y],[landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].z]
+
+        LEFT_ANKLE_X,LEFT_ANKLE_Y,LEFT_ANKLE_Z = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x],[landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y],[landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].z]
+
+        RIGHT_ANKLE_X,RIGHT_ANKLE_Y,RIGHT_ANKLE_Z = [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x],[landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y],[landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].z]
+
+        LEFT_HEEL_X,LEFT_HEEL_Y,LEFT_HEEL_Z = [landmarks[mp_pose.PoseLandmark.LEFT_HEEL.value].x],[landmarks[mp_pose.PoseLandmark.LEFT_HEEL.value].y],[landmarks[mp_pose.PoseLandmark.LEFT_HEEL.value].z]
+
+        RIGHT_HEEL_X,RIGHT_HEEL_Y,RIGHT_HEEL_Z = [landmarks[mp_pose.PoseLandmark.RIGHT_HEEL.value].x],[landmarks[mp_pose.PoseLandmark.RIGHT_HEEL.value].y],[landmarks[mp_pose.PoseLandmark.RIGHT_HEEL.value].z]
+
+        LEFT_FOOT_INDEX_X,LEFT_FOOT_INDEX_Y,LEFT_FOOT_INDEX_Z = [landmarks[mp_pose.PoseLandmark.LEFT_FOOT_INDEX.value].x],[landmarks[mp_pose.PoseLandmark.LEFT_FOOT_INDEX.value].y],[landmarks[mp_pose.PoseLandmark.LEFT_FOOT_INDEX.value].z]
+
+        RIGHT_FOOT_INDEX_X,RIGHT_FOOT_INDEX_Y,RIGHT_FOOT_INDEX_Z = [landmarks[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value].x],[landmarks[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value].y],[landmarks[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value].z]
+
+        #saving as df with column headers given
+        df=pd.DataFrame(list(zip(frame_num,LEFT_SHOULDER_X,LEFT_SHOULDER_Y,LEFT_SHOULDER_Z,
+                             RIGHT_SHOULDER_X,RIGHT_SHOULDER_Y,RIGHT_SHOULDER_Z,
+                             LEFT_ELBOW_X,LEFT_ELBOW_Y,LEFT_ELBOW_Z,
+                             RIGHT_ELBOW_X,RIGHT_ELBOW_Y,RIGHT_ELBOW_Z,
+                             LEFT_WRIST_X,LEFT_WRIST_Y,LEFT_WRIST_Z,
+                             RIGHT_WRIST_X,RIGHT_WRIST_Y,RIGHT_WRIST_Z ,
+                             LEFT_PINKY_X,LEFT_PINKY_Y,LEFT_PINKY_Z, 
+                             RIGHT_PINKY_X,RIGHT_PINKY_Y,RIGHT_PINKY_Z, 
+                             LEFT_INDEX_X,LEFT_INDEX_Y,LEFT_INDEX_Z,
+                             RIGHT_INDEX_X,RIGHT_INDEX_Y,RIGHT_INDEX_Z,
+                             LEFT_THUMB_X,LEFT_THUMB_Y,LEFT_THUMB_Z, 
+                             RIGHT_THUMB_X,RIGHT_THUMB_Y,RIGHT_THUMB_Z , 
+                             LEFT_HIP_X,LEFT_HIP_Y,LEFT_HIP_Z, 
+                             RIGHT_HIP_X,RIGHT_HIP_Y,RIGHT_HIP_Z,
+                             LEFT_KNEE_X,LEFT_KNEE_Y,LEFT_KNEE_Z ,
+                             RIGHT_KNEE_X,RIGHT_KNEE_Y,RIGHT_KNEE_Z, 
+                             LEFT_ANKLE_X,LEFT_ANKLE_Y,LEFT_ANKLE_Z, 
+                             RIGHT_ANKLE_X,RIGHT_ANKLE_Y,RIGHT_ANKLE_Z, 
+                             LEFT_HEEL_X,LEFT_HEEL_Y,LEFT_HEEL_Z,
+                             RIGHT_HEEL_X,RIGHT_HEEL_Y,RIGHT_HEEL_Z,
+                             LEFT_FOOT_INDEX_X,LEFT_FOOT_INDEX_Y,LEFT_FOOT_INDEX_Z,
+                             RIGHT_FOOT_INDEX_X,RIGHT_FOOT_INDEX_Y,RIGHT_FOOT_INDEX_Z)),columns=['Frame_Num','LEFT_SHOULDER_X','LEFT_SHOULDER_Y','LEFT_SHOULDER_Z',
+                                                                                                 'RIGHT_SHOULDER_X','RIGHT_SHOULDER_Y','RIGHT_SHOULDER_Z',
+                                                                                                 'LEFT_ELBOW_X','LEFT_ELBOW_Y','LEFT_ELBOW_Z',
+                                                                                                 'RIGHT_ELBOW_X','RIGHT_ELBOW_Y','RIGHT_ELBOW_Z',
+                                                                                                 'LEFT_WRIST_X','LEFT_WRIST_Y','LEFT_WRIST_Z',
+                                                                                                 'RIGHT_WRIST_X','RIGHT_WRIST_Y','RIGHT_WRIST_Z',
+                                                                                                 'LEFT_PINKY_X','LEFT_PINKY_Y','LEFT_PINKY_Z',
+                                                                                                 'RIGHT_PINKY_X','RIGHT_PINKY_Y','RIGHT_PINKY_Z',
+                                                                                                 'LEFT_INDEX_X','LEFT_INDEX_Y','LEFT_INDEX_Z',
+                                                                                                 'RIGHT_INDEX_X','RIGHT_INDEX_Y','RIGHT_INDEX_Z',
+                                                                                                 'LEFT_THUMB_X','LEFT_THUMB_Y','LEFT_THUMB_Z',
+                                                                                                 'RIGHT_THUMB_X','RIGHT_THUMB_Y','RIGHT_THUMB_Z',
+                                                                                                 'LEFT_HIP_X','LEFT_HIP_Y','LEFT_HIP_Z',
+                                                                                                 'RIGHT_HIP_X','RIGHT_HIP_Y','RIGHT_HIP_Z',
+                                                                                                 'LEFT_KNEE_X','LEFT_KNEE_Y','LEFT_KNEE_Z',
+                                                                                                 'RIGHT_KNEE_X','RIGHT_KNEE_Y','RIGHT_KNEE_Z',
+                                                                                                 'LEFT_ANKLE_X','LEFT_ANKLE_Y','LEFT_ANKLE_Z',
+                                                                                                 'RIGHT_ANKLE_X','RIGHT_ANKLE_Y','RIGHT_ANKLE_Z',
+                                                                                                 'LEFT_HEEL_X','LEFT_HEEL_Y','LEFT_HEEL_Z',
+                                                                                                 'RIGHT_HEEL_X','RIGHT_HEEL_Y','RIGHT_HEEL_Z',
+                                                                                                 'LEFT_FOOT_INDEX_X','LEFT_FOOT_INDEX_Y','LEFT_FOOT_INDEX_Z',
+                                                                                                 'RIGHT_FOOT_INDEX_X','RIGHT_FOOT_INDEX_Y','RIGHT_FOOT_INDEX_Z',])
+    
+        landmarks_df=landmarks_df.append(df)                                                                                             
+    except:
+         pass        #if landmarks not detected than pass                                                                                      
+    #landmarks_list=df.values.tolist()
+    
+# extracting frame number from the image file name 
+on_led_list=[]
+for i in range(0,len(on_led_frames)):
+    on_led_list.append(int(re.findall(r'\d+',on_led_frames[i])[0]))   
+
+len(dir_list)
+x1=np.arange(on_led_list[0],on_led_list[-1]+1,1)
+
+missed=[]
+for i in x1:
+    if i not in landmarks_df["Frame_Num"].values:
+        missed.append(i)
+        
+# adding the rows of missed LED for future reference in the df
+for i in missed:
+   abc=[0]*66
+   abc.insert(0, i)
+   landmarks_df.loc[len(landmarks_df)] = abc
+
+# add the ON_LED column in the df
+landmarks_df['ON_LED'] = [0]*landmarks_df.shape[0]
+landmarks_df = landmarks_df.reset_index()
+for a in on_led_list:
+    idx = list(np.where(landmarks_df["Frame_Num"] == a)[0])
+    if len(idx) == 0:
+        continue
+    landmarks_df.loc[idx[0],'ON_LED'] = 1
+landmarks_df=landmarks_df.drop(['index'],axis=1)
+landmarks_df= landmarks_df.sort_values(by=['Frame_Num'])
+
+# saving as landmark coordinates as csv
+
+landmarks_df.to_csv(pdf_name, index=False)
+# #########################################################################################################
