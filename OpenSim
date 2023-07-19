@@ -1,0 +1,460 @@
+# Code to generate a mocap report which contains EMG (Electromyography), IK (Inverse Kinetics) and ID (Inverse Dynamics) information.
+
+
+# Importing required Libraries
+import os
+import shutil
+import numpy as np
+import pandas as pd
+
+# Subject Details
+Subject_Number = "17"
+Date = "24May23"
+
+# Path where the reports folder is stored
+folder_path = "D:/Mar23_May23/S"+Subject_Number+"_"+Date
+
+# Change the Working Directory to the given path
+os.chdir(folder_path)
+
+# Get the list of all files in that path
+dir_list = os.listdir(folder_path)
+
+# Create a SubjectNumber folder for IK & ID
+Subject_path = folder_path+"/Subject"+Subject_Number
+
+# If SubjectNumber folder already exists in the given path
+if os.path.exists(Subject_path):
+    #Remove the folder
+    shutil.rmtree(Subject_path)
+    
+# Make a sub-folder SubjectNumber in the given path
+os.mkdir(Subject_path)
+
+# List to save the LED Indices before & after which rows to be deleted
+Index_LED = []
+# List to save the EMG Indices before & after which rows to be deleted
+Index_EMG = []
+
+# Header Names of the Text File
+a = "L.FootHeel_X	L.FootHeel_Y	L.FootHeel_Z	L.AnkleLateral_X	L.AnkleLateral_Y	L.AnkleLateral_Z	L.AnkleMedial_X	L.AnkleMedial_Y	L.AnkleMedial_Z	L.ToeLateral_X	L.ToeLateral_Y	L.ToeLateral_Z	L.ToeMedial_X	L.ToeMedial_Y	L.ToeMedial_Z	L.WristMedial_X	L.WristMedial_Y	L.WristMedial_Z	L.WristLateral_X	L.WristLateral_Y	L.WristLateral_Z	L.ShoulderFront_X	L.ShoulderFront_Y	L.ShoulderFront_Z	L.ShoulderRear_X	L.ShoulderRear_Y	L.ShoulderRear_Z	L.KneeLateral_X	L.KneeLateral_Y	L.KneeLateral_Z	L.KneeMedial_X	L.KneeMedial_Y	L.KneeMedial_Z	L.LowerArmLateral_X	L.LowerArmLateral_Y	L.LowerArmLateral_Z	L.LowerArmMedial_X	L.LowerArmMedial_Y	L.LowerArmMedial_Z	R.FootHeel_X	R.FootHeel_X	R.FootHeel_X	R.AnkleLateral_X	R.AnkleLateral_Y	R.AnkleLateral_Z	R.AnkleMedial_X	R.AnkleMedial_Y	R.AnkleMedial_Z	R.ToeLateral_X	R.ToeLateral_Y	R.ToeLateral_Z	R.ToeMedial_X	R.ToeMedial_Y	R.ToeMedial_Z	R.WristMedial_X	R.WristMedial_Y	R.WristMedial_Z	R.WristLateral_X	R.WristLateral_Y	R.WristLateral_Z	R.ShoulderFront_X	R.ShoulderFront_Y	R.ShoulderFront_Z	R.ShoulderRear_X	R.ShoulderRear_Y	R.ShoulderRear_Z	R.KneeLateral_X	R.KneeLateral_Y	R.KneeLateral_Z	R.KneeMedial_X	R.KneeMedial_Y	R.KneeMedial_Z	R.LowerArmLateral_X	R.LowerArmLateral_Y	R.LowerArmLateral_Z	R.LowerArmMedial_X	R.LowerArmMedial_Y	R.LowerArmMedial_Z	LASIS_X	LASIS_Y	LASIS_Z	LPSIS_X	LPSIS_Y	LPSIS_Z	RASIS_X	RASIS_Y	RASIS_Z	RPSIS_X	RPSIS_Y	RPSIS_Z	C7_X	C7_Y	C7_Z	CLAV_X	CLAV_Y	CLAV_Z	LACR_X	LACR_Y	LACR_Z	RACR_X	RACR_Y	RACR_Z	Head_Top_X	Head_Top_Y	Head_Top_Z	R.UpparArm_X	R.UpparArm_Y	R.UpparArm_Z	L.UpparArm_X	L.UpparArm_Y	L.UpparArm_Z	R.Thigh_X	R.Thigh_Y	R.Thigh_Z	L.Thigh_X	L.Thigh_Y	L.Thigh_Z	R.Shank_X	R.Shank_Y	R.Shank_Z	L.Shank_X	L.Shank_Y	L.Shank_Z	RFAsuperior_X	RFAsuperior_Y	RFAsuperior_Z	LFAsuperior_X	LFAsuperior_Y	LFAsuperior_Z"
+#a = "L.FootHeel			L.AnkleLateral			L.AnkleMedial			L.ToeLateral			L.ToeMedial			L.WristMedial			L.WristLateral			L.ShoulderFront			L.ShoulderRear			L.KneeLateral			L.KneeMedial			L.LowerArmLateral			L.LowerArmMedial			R.FootHeel			R.AnkleLateral			R.AnkleMedial			R.ToeLateral			R.ToeMedial			R.WristMedial			R.WristLateral			R.ShoulderFront			R.ShoulderRear			R.KneeLateral			R.KneeMedial			R.LowerArmLateral			R.LowerArmMedial			LASIS			LPSIS			RASIS			RPSIS			C7			CLAV			LACR			RACR			Head_Top			R.UpparArm			L.UpparArm			R.Thigh			L.Thigh			R.Shank			L.Shank			RFAsuperior			LFAsuperior"
+
+# Splitting to get the individual names of the columns as a list
+b = a.split("\t")
+#print(len(b))
+
+# Further splitting the values in the list to remove X,Y&Z
+c = [b[j][:-2] for j in range(0, len(b),3)]
+# Length of 'c' tells how many markers are there
+markers = str(len(c))
+
+# Generating the First Row of the TRC File (after header lines)
+d =""
+for i in range(len(c)):
+    d+=c[i]+"\t"+"\t"+"\t"
+#print(d)
+
+# Generating the Second Row of the TRC File (Xi,Yi,Zi)
+l = ""
+for i in range(len(c)):
+    l+=("X"+str(i+1)) + "\t"
+    l+=("Y"+str(i+1)) + "\t"
+    l+=("Z"+str(i+1)) + "\t"
+#print(l)
+
+# Loop over every file in that Directory Path
+for file in dir_list:
+    
+    # Picking up only the MoCap reports
+    if 'Full_Body_Jigs' in file:
+        
+        # Printing name of the file being processed
+        print("\nProcessing "+file+" ----- ")
+
+        # Get the file name without extension
+        filename = file.split(' ')[0]
+        # Create a name for new txt file
+        new_doc_txt = 'TRC_'+filename+'.txt'
+        # Create a name for the trc file
+        new_doc_trc = Subject_path+"/TRC_"+filename+".trc"
+        
+        # Open the File
+        with open(file) as f:
+            # Read it contents
+            lines = f.readlines()
+            # Close it
+            f.close()
+
+        # Write the Contents of the File to a New File
+        with open(new_doc_txt, 'w') as fp:
+            # Iterate each line
+            for number, line in enumerate(lines):
+                # Delete the lines 0-7
+                if number not in [0,1,2,3,4,5,6,7]:
+                    # Write the rest of the lines in the file
+                    fp.write(line)
+            # Close the file
+            fp.close()
+ 
+        # Reading the File as a DataFrame for making necessary Changes   
+        df = pd.read_csv(new_doc_txt, sep='\t')
+        
+        # Drop rows with EMG values as 0
+        for ind_start in df.index:
+            if df['EMG'][ind_start] < 3.0:
+                df.drop(ind_start,inplace=True)
+            elif df['EMG'][ind_start] >= 3.0:
+                print('  Start EMG : ',ind_start)
+                break
+            
+        for ind_end in df.index[::-1]:
+            if df['EMG'][ind_end] < 3.0:
+                df.drop(ind_end,inplace=True)
+            elif df['EMG'][ind_end] >= 3.0:
+                print('  End EMG : ',ind_end)
+                break
+        
+        # Adding start & end index to Index_EMG list 
+        Index_EMG.append([filename,ind_start,ind_end,ind_end-ind_start])
+        
+        # To delete rows after EMG has switched off (i.e. nan rows)
+        df = df.truncate(after=ind_end)
+        
+        
+        # Deleting the rows where EMG is on but LED is 0 (<1.0)
+        for ind_start in df.index:
+            if df['LED_TRIGGER'][ind_start] < 1.6:
+                df.drop(ind_start,inplace=True)
+            elif df['LED_TRIGGER'][ind_start] >= 1.6:
+                print('  Start LED : ',ind_start)
+                break
+            
+        for ind_end in df.index[::-1]:
+            if df['LED_TRIGGER'][ind_end] < 1.6:
+                df.drop(ind_end,inplace=True)
+            elif df['LED_TRIGGER'][ind_end] >= 1.6:
+                print('  End LED : ',ind_end)
+                break
+        
+        # Adding start & end index to Index_LED list     
+        Index_LED.append([filename,ind_start,ind_end,ind_end-ind_start])
+          
+        # Drop last few columns (force & trigger) of the DataFrame
+        df = df.iloc[: , :-4]
+        
+        # Reindexing the Rows
+        df = df.reset_index(drop=True)
+        
+        # Copying the Index in the Sample Column
+        df['Sample #'] = df.index
+        
+        # Generating the Time Frames
+        try :
+            df['Time'] = np.arange(0,df.shape[0]/1000,1/1000)
+        except:
+            print('Exception Occured')
+            numarr = (0,df.shape[0]/1000,1/1000)
+            df['Time'] = pd.Series(numarr)
+        
+        # Rounding all values in DF upto 6 decimal values
+        df = df.round(decimals = 6)
+        
+        # Saving the updated dataframe as a CSV file
+        df.to_csv(new_doc_trc, index = None, sep='\t', na_rep='NaN')
+        
+        # Delete the text file since it is not required now
+        os.remove(new_doc_txt)
+
+        # Lines to add in the beginning of TRC file
+        Line1 = "PathFileType	4	(X/Y/Z) TRC_"+filename+".trc"
+        Line2 = "DataRate	CameraRate	NumFrames	NumMarkers	Units	OrigDataRate	OrigDataStartFrame	OrigNumFrames"
+        Line3 = "1000.00	1000.00	       "+str(df.shape[0]-1)+"	"+markers+"	m	1000.00	1	       "+str(df.shape[0]-1)
+        Line4 = "Frame#"+"\t"+"Time"+"\t"+d
+        Line5 = "\t"+"\t"+l
+            
+        # Writing & Saving the TRC file
+        with open(new_doc_trc, 'r+') as file:
+            content = file.read()[1784:]
+            file.seek(0)
+            file.write(Line1 + "\n" + Line2 + "\n" + Line3 + "\n" + Line4 + "\n" + Line5 + content)
+
+# Defining the Column names for the Index CSV
+column_names = ['Filename','Start','End','Samples']
+
+# Saving the Index_EMG list as a CSV (required to sync MoCap EMG & Biometrics EMG)
+df1 = pd.DataFrame(Index_EMG)
+df1.to_csv('EMG_Indices.csv',header=column_names)
+
+# Saving the Index_LED list as a CSV (Required for txt2grfmot code)
+df2 = pd.DataFrame(Index_LED)
+df2.to_csv('LED_Indices.csv',header=column_names)
+
+# -----------------------------------------------------------------------------
+# #############################################################################
+# -----------------------------------------------------------------------------
+# EMG D1D2 merge code
+
+# Importing required Libraries
+import os
+import pandas as pd
+
+# Subject Details
+S_No = "17"
+S_Date = "24May23"
+
+# Path where the reports folder is stored
+path = 'C:/Users/neurotechlab/OneDrive - IIT Hyderabad/MotionMonitor_Subjects/Mar23_May23_Subjects15/'
+# Path for the specific subject folder
+subject_path = path+'Subject'+S_No+'/EMG_S'+S_No+'_'+S_Date+'/Exported/D1_D2/'
+
+# Change the Working Directory to the given path
+os.chdir(subject_path)
+
+# Get the list of all files in that path
+dir_list = os.listdir(subject_path)
+
+# List of the Activities
+Activities = ['ClimbOnStool', 'Dusting', 'ForwardLungeLeft', 'ForwardLungeRight', 'HandsOnWaist',
+              'Malasana', 'NeutralStance', 'NormalSquat', 'Parshvakonasana', 'PickObject', 
+              'Point1','Point2', 'Point3', 'Point4', 'ReachGraspEat', 'ShortJump', 
+              'SideLunge','StepForwardLeft', 'StepForwardRight', 'StepSideRight', 'Tadasana', 
+              'ThrowBall', 'Trikonasana', 'Utkatakonasana', 'Virabhadrasana', 'Vrikshasana']
+
+# Loop over the activities
+for i in range(len(Activities)):
+    
+    # Read Activity_D1.csv
+    file_D1 = subject_path+'S'+S_No+'_'+Activities[i]+'_D1.csv'
+    # Read Activity_D2.csv
+    file_D2 = subject_path+'S'+S_No+'_'+Activities[i]+'_D2.csv'
+    
+    # Reading the file_D1 as dataframe
+    df1 = pd.read_csv(file_D1)
+    # Reading the file_D2 as dataframe
+    df2 = pd.read_csv(file_D2)
+    
+    # Merging both the dataframes into one dataframe
+    df = pd.concat([df1, df2], axis = 1)
+    # Writing the merged dataframe as .csv file
+    df.to_csv('S'+S_No+'_'+Activities[i]+'_D1D2.csv', index = False)
+    
+    # Delete Activity_D1 since it is repetitive to keep
+    os.remove(file_D1)
+    # Delete  Activity_D2 since it is repetitive to keep
+    os.remove(file_D2)
+    
+# -----------------------------------------------------------------------------
+# #############################################################################
+# -----------------------------------------------------------------------------
+# IK ID merge code
+# Importing required Libraries
+import os
+import shutil
+import pandas as pd
+
+# Subject Details
+Subject_Number = "17"
+Date = "24May23"
+
+# Path where the reports folder is stored
+folder_path = "D:/Mar23_May23/S"+Subject_Number+"_"+Date+"/Subject"+Subject_Number
+
+# Change the Working Directory to the given path
+os.chdir(folder_path)
+
+# Get the list of all files in that path
+dir_list = os.listdir(folder_path)
+
+# Create a Merged folder for IK & ID
+Merged_path = folder_path+"/Merged/"
+
+# If Merged folder already exists in the given path
+if os.path.exists(Merged_path):
+    #Remove the folder
+    shutil.rmtree(Merged_path)
+    
+# Make a sub-folder Merged in the given path
+os.mkdir(Merged_path)
+
+# List of the Activities
+Activities = ['ClimbOnStool', 'Dusting', 'ForwardLungeLeft', 'ForwardLungeRight', 'HandsOnWaist',
+              'Malasana', 'NeutralStance', 'NormalSquat', 'Parshvakonasana', 'PickObject', 
+              'Point1','Point2', 'Point3', 'Point4', 'ReachGraspEat', 'ShortJump', 
+              'SideLunge','StepForwardLeft', 'StepForwardRight', 'StepSideRight', 'Tadasana', 
+              'ThrowBall', 'Trikonasana', 'Utakatakonasana', 'Virabhadrasana', 'Vrikshasana']
+
+# Path for IK files
+IK_path = folder_path+"/IK/"
+# Path for ID files
+ID_path = folder_path+"/ID/"
+
+# Loop over the activities
+for i in range(len(Activities)):
+    
+    print(' \n Processing '+Activities[i]+' ----------')
+    
+    # Reading the IK.mot file
+    IK_file = IK_path+'IKResults_S'+Subject_Number+'_'+Activities[i]+'.mot'
+    # Reading the ID.sto file
+    ID_file = ID_path+'IDResults_S'+Subject_Number+'_'+Activities[i]+'.sto'
+    
+    # Reading the IK as dataframe
+    df1 = pd.read_csv(IK_file, delim_whitespace=True, skiprows = 10)
+    # Reading the ID as dataframe
+    df2 = pd.read_csv(ID_file, delim_whitespace=True, skiprows = 6)
+    
+    # Deleting the time column from ID file since already there in TRC
+    df2 = df2.drop(['time'], axis=1)
+
+    # Merging both the dataframes into one dataframe
+    df = pd.concat([df1, df2], axis = 1)
+    # Writing the merged dataframe as .csv file
+    df.to_csv(Merged_path+'S'+Subject_Number+'_'+Activities[i]+'_IKID.csv', index = False)
+    
+# -----------------------------------------------------------------------------
+# #############################################################################
+# -----------------------------------------------------------------------------
+# Final activity dataset code
+# Importing required Libraries
+import os
+import shutil
+import pandas as pd
+
+# Subject Details
+Subject_Number = "17"
+Date = "24May23"
+
+# Path where the reports folder is stored
+folder_path = "D:/Mar23_May23/S"+Subject_Number+"_"+Date+"/"
+
+# Change the Working Directory to the given path
+os.chdir(folder_path)
+
+# Get the list of all files in that path
+dir_list = os.listdir(folder_path)
+
+# Create a folder where the final Datasets will be saved
+Dataset_path = folder_path+"/Activity_Datasets/"
+
+# If the folder already exists in the given path
+if os.path.exists(Dataset_path):
+    #Remove the folder
+    shutil.rmtree(Dataset_path)
+    
+# Make a sub-folder in the given path
+os.mkdir(Dataset_path)
+
+# List of the Activities
+Activities = ['ClimbOnStool', 'Dusting', 'ForwardLungeLeft', 'ForwardLungeRight', 'HandsOnWaist',
+              'Malasana', 'NeutralStance', 'NormalSquat', 'Parshvakonasana', 'PickObject', 
+              'Point1','Point2', 'Point3', 'Point4', 'ReachGraspEat', 'ShortJump', 
+              'SideLunge','StepForwardLeft', 'StepForwardRight', 'StepSideRight', 'Tadasana', 
+              'ThrowBall', 'Trikonasana', 'Utakatakonasana', 'Virabhadrasana', 'Vrikshasana']
+
+# Path for IKID merged files
+IKID_path = folder_path+"/Subject"+Subject_Number+"/Merged/"
+# Path for EMG files
+EMG_path = folder_path+"/Subject"+Subject_Number+"/EMG/"
+
+# Loop over the activities
+for i in range(len(Activities)):
+    
+    print(' \n Processing '+Activities[i]+' ----------')
+    
+    # Reading the MoCap text file
+    MoCap_file = folder_path+'S'+Subject_Number+'_'+Activities[i]+' - Full_Body_Jigs.txt'
+    # Reading the IK.mot file
+    IKID_file = IKID_path+'S'+Subject_Number+'_'+Activities[i]+'_IKID.csv'
+
+    # Reading the EMG file (either D1D2 merged or GUI based on difference)
+    if Activities[i] in ['HandsOnWaist','PickObject','ReachGraspEat','StepForwardLeft','StepSideRight']:
+        print(Activities[i])
+        EMG_file = EMG_path+'S'+Subject_Number+'_'+Activities[i]+'_D1D2.csv'
+    else:
+        EMG_file = EMG_path+'S'+Subject_Number+'_'+Activities[i]+'_GUI.csv'
+
+    # Reading the MoCap file as dataframe
+    df1 = pd.read_csv(MoCap_file, delim_whitespace=True, skiprows = 8)
+    
+    # It splits Sample # as two columns hence restructuring the column headers #
+   
+    # Column headers as a list
+    headers = list(df1.columns)
+    # Delelting '#' from the column names
+    if headers[1] == '#':
+        headers.pop(1)
+    
+    # Delelting last column since it is garbage due to split of Sample # as 2 columns
+    df1 = df1.drop(df1.columns[-1],axis=1)
+    # Renaming the columns
+    df1.columns = headers
+  
+    
+    # Read the EMG_Indices file to cut rows from df1 at the same indices
+    df_EMGindex = pd.read_csv(folder_path+"/EMG_Indices.csv")
+        
+    # Getting the index of the specified activity in the csv
+    idx = df_EMGindex.index[df_EMGindex['Filename'] == 'S'+Subject_Number+'_'+Activities[i]]
+        
+    # Getting the Start index for the activity
+    start = df_EMGindex.loc[idx, 'Start'][idx[0]]
+        
+    # Getting the End index for the activity
+    end = df_EMGindex.loc[idx, 'End'][idx[0]]
+    
+    # To delete rows before & after EMG has switched off
+    df1 = df1.truncate(before=start)
+    df1 = df1.truncate(after=end)
+    
+    # Reindexing the Rows
+    df1 = df1.reset_index(drop=True)
+    
+    # Reading the Exported EMG csv file as another dataframe    
+    df2 = pd.read_csv(EMG_file)
+    
+    # Merging the MoCap df with EMG df
+    df = pd.concat([df1, df2],axis=1)
+    
+    # Read the LED_Indices file to cut rows from merged df at the same indices
+    df_LEDindex = pd.read_csv(folder_path+"/LED_Indices.csv")
+        
+    # Getting the index of the specified activity in the csv
+    idx = df_LEDindex.index[df_LEDindex['Filename'] == 'S'+Subject_Number+'_'+Activities[i]]
+        
+    # Getting the Start index for the activity
+    start = df_LEDindex.loc[idx, 'Start'][idx[0]]
+    # Since we re-indexed, hence we need to use the Sample column
+    LED_on_sample = df.index[df['Sample']==start][0]
+        
+    # Getting the Start index for the activity
+    end = df_LEDindex.loc[idx, 'End'][idx[0]]
+    # Since we re-indexed, hence we need to use the Sample column
+    LED_off_sample = df.index[df['Sample']==end][0]
+    
+    # To delete rows before & after LED has switched off
+    df = df.truncate(before=LED_on_sample)
+    df = df.truncate(after=LED_off_sample)
+
+    # Reindexing the Rows
+    df = df.reset_index(drop=True)
+
+    # Reading the IKID csv file as dataframe
+    df3 = pd.read_csv(IKID_file)
+    # Merging this with the previously merged df
+    df = pd.concat([df, df3],axis=1)
+
+    
+    # Deleting the 'time' column from merged IKID file & storing it under the 'Time' of MoCap file
+    df['Time'] = df.pop('time')
+    # Rounding all values in df upto 6 decimal values
+    df = df.applymap('{:,.6f}'.format)
+    # Copying the Index in the Sample Column
+    df['Sample'] = df.index
+    
+    # Writing the final dataset as .csv file
+    df.to_csv(Dataset_path+'S'+Subject_Number+'_'+Activities[i]+'.csv', index = False)
+    
+# -----------------------------------------------------------------------------
+# #############################################################################
+# -----------------------------------------------------------------------------
