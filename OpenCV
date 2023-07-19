@@ -1,0 +1,164 @@
+#  Convert videos into mini-videos, extract individual frames, and remove unnecessary frames before the first LED activation and after the last LED activation.
+
+#Splitting a Video into multiple Mini Videos
+
+# Importing the Library 
+import os
+from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
+
+#  Path where the video is stored 
+video_dir = "C:/Users/Ashi/Project/"
+
+#  Name of the Video
+video = video_dir + "cam1.mp4"
+
+# List of seconds from where to start cutting the video 
+start = [504, 660, 785, 870, 947, 1127, 1250, 1390]
+
+#  List of respective end seconds i.e. till where to cut the video 
+end = [515, 675, 804, 893, 963, 1151, 1280, 1424]
+
+# Loop for making multiple mini videos
+for i in range(len(start)):
+    
+    # Name of the Splitted Video
+    target_video = video_dir + "Activity_" + str(i+1) + ".mp4"
+    
+    print("\n")
+    
+    # Delete if already exists
+    if os.path.exists(target_video):
+        os.remove(target_video)
+
+# ##################################################################################################
+
+# Program To Read video and Extract Frames
+import cv2
+import os
+
+path =('C:/Users/Ashi/Project/camera1/')
+os.chdir(path)
+# Function to extract frames
+def FrameCapture(path, file):
+    os.mkdir(path+file.split('.')[0])
+    # Path to video file
+    vidObj = cv2.VideoCapture(path+file)
+    # Used as counter variable
+    count = 0
+    # checks whether frames were extracted
+    success = 1
+    while success:
+
+        success, image = vidObj.read()
+        try:
+            # Saves the frames with frame-count
+            #image = cv2.rotate(image) 
+            cv2.imwrite(path+file.split('.')[0]+'/'+"frame%d.jpg" % count, image)
+            if count == 0:
+                cv2.imwrite(path+file.split('.')[0]+'/'+"template%d.jpg" % count, image)
+        except cv2.error as e:
+            print(e)
+        count += 1   
+# Driver Code
+if __name__ == '__main__':
+    for file in os.listdir(path):
+        if '.mp4' in file:
+            # Calling the function
+            FrameCapture(path,file)
+# #######################################################################################
+# Remove frames before the first LED ON and after the last lED ON
+
+import numpy as np
+import cv2
+import os
+import re
+
+#path where frames are saved
+path='C:/Ashi/Project/cam1'
+#csv name to save the coordinates output from the mediapipe model
+pdf_name='Side_Step_S10_xyz_Cam2.csv'
+
+os.chdir(path)
+dir_list=os.listdir(path)
+on_led_frames=[]         #to store the frame numbers where led is ON
+
+
+"""below code snippet is used to find the dimensions of the led in the frame. 
+   Comment out the code after finding the dimensions.
+   Use dimensions of led in later section for each subject"""
+
+# =============================================================================
+# image = cv2.imread(dir_list[0])
+# On_led_std = image[1010:1050,180:230] 
+# On_led_std=cv2.resize(On_led_std,(500,500))
+# cv2.imshow("Body", On_led_std)
+# #cv2.imshow("Original", image)
+# cv2.waitKey(0)
+# =============================================================================
+
+
+for file in dir_list:
+    image = cv2.imread(file)
+    #change these dimensions of led for each subject
+    image= image[970:1005,600:690]           #change the led dimensions here.
+    img = cv2.bilateralFilter(image, 11, 100, 100)
+    # Convert from BGR to HSV
+    img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    # Lower mask (0-10)
+    lower_red = np.array([0,100, 100])    #if detection is not happening accurately change the values here.
+    upper_red = np.array([10, 255, 255])
+    mask0 = cv2.inRange(img_hsv, lower_red, upper_red)
+    # Upper mask (170-180)
+    lower_red = np.array([170,100,100])    #if detection is not happening accurately change the values here.
+    upper_red = np.array([180, 255, 255])
+    mask1 = cv2.inRange(img_hsv, lower_red, upper_red)
+    # Join the masks
+    raw_mask = mask0 | mask1
+    ctns = cv2.findContours(raw_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]  # Find contours
+    mask = np.zeros_like(raw_mask)  # Fill mask with zeros
+    idx = 0
+    #Iterate contours
+    for c in ctns:
+        area = cv2.contourArea(c)  # Find the area of each contours
+
+        if (area > 50):  # Ignore small contours (assume noise).
+            cv2.drawContours(mask, [c], 0, 255, -1)
+            (x, y), radius = cv2.minEnclosingCircle(c)
+            center = (int(x), int(y))
+            radius = int(radius)
+            cv2.circle(mask, center, radius, 255, -1)
+            tmp_mask = np.zeros_like(mask)
+            cv2.circle(tmp_mask, center, radius, 255, -1)
+            output = cv2.bitwise_and(image, image, mask=tmp_mask)
+            #cv2.imshow(f'output{idx}', output)  # Show output images for testing
+            #cv2.imwrite(f'output{idx}.png', output)  # Save output images for testing
+            idx += 1
+    
+    if (np.any(mask) == True):
+        on_led_frames.append(file)
+
+        print("****************************")
+        print(file)
+        
+
+#sorting the on_led_frames and dir_list
+on_led_frames= (sorted(on_led_frames, key=lambda s: int(re.search(r'\d+', s).group())))
+dir_list= (sorted(dir_list, key=lambda s: int(re.search(r'\d+', s).group())))
+
+#%%
+# code to remove the frames before first led is on
+for file in dir_list:
+    if(file!=on_led_frames[0]):
+        os.remove(file)
+    else:
+        break
+
+dir_list=os.listdir(path)
+dir_list= (sorted(dir_list, key=lambda s: int(re.search(r'\d+', s).group())))
+
+
+# code to remove the frames after last led is on           
+for file in dir_list:
+    if (file!=on_led_frames[-1] and int(re.findall(r'\d+',file)[0])>int(re.findall(r'\d+',on_led_frames[-1])[0])):    
+        os.remove(file)
+# ######################################################################################
